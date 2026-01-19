@@ -231,7 +231,7 @@ void save_gaussian_splat_ply(
         .copy_(sh_rest_gpu.contiguous().to(torch::kCPU));
 
     // Write PLY
-    PlyFileWriter writer(filename, binary ? PlyFormat::BINARY : PlyFormat::ASCII, true, 0);
+    PlyFileWriter writer(filename, binary ? PlyFormat::BINARY : PlyFormat::ASCII, true, 500 * 1024 * 1024);
     bind_writer(writer,
         PositionSpec{ out_vertices },
         ScaleSpec{ out_scales },

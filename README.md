@@ -74,7 +74,7 @@ void load_ply(
     // 1. Order-Independent: The order of Specs passed does not need to match the file's internal structure.
     // 2. Selective/Optional Reading: Only the bound attributes are processed. You can easily omit any Spec 
     //    (e.g., by commenting it out) to skip loading unnecessary data from the file.
-    bind_reader(reader, f_spec, n_spec, v_spec, w_spec, visib_spec, /*a_spec, s_spec*/, t_spec);
+    bind_reader(reader, f_spec, n_spec, v_spec, w_spec, visib_spec, /*a_spec, s_spec, */t_spec);
 }
 ```
 

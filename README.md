@@ -293,12 +293,4 @@ Contributions are welcome:
 Maintainer: TAO  
 Email: 12804985@qq.com
 
----
 
-## Roadmap
-
-- Streaming writer interface
-- Partial property loading
-- Multi-threaded parsing
-- Python bindings
-- PLY compression extensions

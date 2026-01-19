@@ -240,7 +240,6 @@ void save_gaussian_splat_ply(
         SHDCSpec{ out_sh_dc },
         SHRestSpec{ out_sh_rest }
     );
-    writer.write_all();
 }
 
 ```

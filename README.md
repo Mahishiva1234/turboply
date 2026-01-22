@@ -253,6 +253,34 @@ void save_gaussian_splat_ply(
 
 ```
 
+## Custom Type Binding and Preallocation Example
+
+```cpp
+
+struct Point {
+    float x, y, z;
+};
+
+PlyFileReader reader("SampleData\\ascii.ply", true);
+reader.parseHeader();
+auto elem = reader.getElements()[0];
+assert(elem.name == "vertex");
+
+auto pts = new Point[elem.count];
+std::vector<Point> normals;
+normals.resize(elem.count);
+
+std::vector<float> weight;
+using WeightSpec = ScalarSpec<"vertex", float, "weight">;
+
+VertexSpec v_spec{ std::span<Point>(pts, elem.count) }; // 预分配
+NormalSpec n_spec{ std::span(normals) }; // 预分配
+WeightSpec w_spec{ weight }; // 动态分配
+
+bind_reader(reader, n_spec, v_spec, w_spec);
+
+```
+
 ## Memory-Mapped I/O
 
 TurboPLY optionally uses memory-mapped files to avoid unnecessary data copies when loading or writing large PLY files.

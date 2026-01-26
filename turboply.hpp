@@ -10,8 +10,8 @@
  *          access to large datasets. Big-endian format is intentionally 
  *          not supported for simplicity and performance.
  * 
- * @version 1.0.1
- * @date    2026-01-06
+ * @version 1.0.3
+ * @date    2026-01-26
  *
  * -----------------------------------------------------------------------------
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -51,7 +51,6 @@
 #include <string>
 #include <vector>
 #include <variant>
-#include <optional>
 #include <sstream>
 #include <fstream>
 #include <filesystem>
@@ -60,7 +59,7 @@ namespace turboply {
 
 using PlyScalar = std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, float, double>;
 
-enum class ScalarKind : uint8_t { UNSUPPORT, INT8, UINT8, INT16, UINT16, INT32, UINT32, FLOAT32, FLOAT64 };
+enum class ScalarKind : uint8_t { UNUSED, INT8, UINT8, INT16, UINT16, INT32, UINT32, FLOAT32, FLOAT64 };
 
 template <typename T> 
 T ply_cast(const PlyScalar& v) { return std::visit([](auto&& x) { return static_cast<T>(x); }, v); }
@@ -74,8 +73,8 @@ public:
     struct Element {
         struct Property {
             std::string name;
-            ScalarKind valueKind = ScalarKind::UNSUPPORT;
-            std::optional<ScalarKind> listKind = std::nullopt;
+            ScalarKind valueKind = ScalarKind::UNUSED;
+            ScalarKind listKind = ScalarKind::UNUSED;
         };
 
         std::string name;
@@ -95,6 +94,7 @@ protected:
 	std::vector<std::string> _comments;
 	std::vector<Element> _elements;
     class FormatHandler* _handler;
+    bool _has_header;
 };
 
 using PlyFormat  = PlyBase::Format;
@@ -107,12 +107,13 @@ public:
     using StreamT = std::istream;
 
     explicit PlyStreamReader(std::istream& is, Format format = Format::BINARY) 
-        : PlyBase(format), _is(is) {}
+        : PlyBase{ format }, _is{ is } {
+    }
     virtual ~PlyStreamReader() = default;
 
 	void parseHeader();
-    const auto& getComments() const noexcept { return _comments; }
-    const auto& getElements() const noexcept { return _elements; }
+    const std::vector<std::string>& getComments() const;
+    const std::vector<PlyElement>& getElements() const;
 
     PlyScalar readScalar(ScalarKind );
 
@@ -125,15 +126,16 @@ public:
     using StreamT = std::ostream;
 
     explicit PlyStreamWriter(std::ostream& os, Format format = Format::BINARY) 
-        : PlyBase(format), _os(os) {}
+        : PlyBase(format), _os(os) {
+    }
     virtual ~PlyStreamWriter() = default;
     
-    void addComment(std::string );
-    void addElement(Element );
+    void addComment(std::string c);
+    void addElement(Element elem);
     
     void writeHeader();
-    void writeScalar(const PlyScalar& );
-    void writeScalar(const PlyScalar& , ScalarKind );
+    void writeScalar(const PlyScalar& v);
+    void writeScalar(const PlyScalar& v, ScalarKind k);
     void writeLineEnd();
 
     void flush() { _os.flush(); }
@@ -154,13 +156,12 @@ public:
 
     PlyFileHandler(const std::filesystem::path& filename, bool enable_file_mapping = false)
         requires std::same_as<StreamHandler, PlyStreamReader>
-        : PlyFileHandler(init(filename, enable_file_mapping, 0), detectPlyFormat(filename)) {
+        : PlyFileHandler{ init(filename, enable_file_mapping, 0), detectPlyFormat(filename) } {
     }
     PlyFileHandler(const std::filesystem::path& filename, PlyFormat format = PlyFormat::BINARY
-        , bool enable_file_mapping = false
-        , size_t reserve_size = 100 * 1024 * 1024) 
+        , bool enable_file_mapping = false, size_t reserve_size = 100 * 1024 * 1024) 
         requires std::same_as<StreamHandler, PlyStreamWriter>
-        : PlyFileHandler(init(filename, enable_file_mapping, reserve_size), format) {
+        : PlyFileHandler{ init(filename, enable_file_mapping, reserve_size), format } {
     }
     virtual ~PlyFileHandler() { close(); }
 

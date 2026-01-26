@@ -141,21 +141,21 @@ By casting the Tensor's raw memory to `std::array` types, we maintain TurboPLY's
 static constexpr int SH_DC_DIM = 3;
 static constexpr int SH_REST_DIM = 45;
 
-using PositionSpec = ScalarSpec<"vertex", float, "x", "y", "z">;
-using ScaleSpec    = ScalarSpec<"vertex", float, "scale_0", "scale_1", "scale_2">;
-using RotationSpec = ScalarSpec<"vertex", float, "rot_0", "rot_1", "rot_2", "rot_3">;
-using OpacitySpec  = ScalarSpec<"vertex", float, "opacity">;
-using SHDCSpec     = ScalarSpec<"vertex", float, "f_dc_0", "f_dc_1", "f_dc_2">;
-using SHRestSpec   = ScalarSpec<"vertex", float,
-    "f_rest_0","f_rest_1","f_rest_2","f_rest_3","f_rest_4",
-    "f_rest_5","f_rest_6","f_rest_7","f_rest_8","f_rest_9",
-    "f_rest_10","f_rest_11","f_rest_12","f_rest_13","f_rest_14",
-    "f_rest_15","f_rest_16","f_rest_17","f_rest_18","f_rest_19",
-    "f_rest_20","f_rest_21","f_rest_22","f_rest_23","f_rest_24",
-    "f_rest_25","f_rest_26","f_rest_27","f_rest_28","f_rest_29",
-    "f_rest_30","f_rest_31","f_rest_32","f_rest_33","f_rest_34",
-    "f_rest_35","f_rest_36","f_rest_37","f_rest_38","f_rest_39",
-    "f_rest_40","f_rest_41","f_rest_42","f_rest_43","f_rest_44"
+using PositionSpec = MultiSpec<"vertex", float, "x", "y", "z">;
+using ScaleSpec = MultiSpec<"vertex", float, "scale_0", "scale_1", "scale_2">;
+using RotationSpec = MultiSpec<"vertex", float, "rot_0", "rot_1", "rot_2", "rot_3">;
+using OpacitySpec = ScalarSpec<"vertex", float, "opacity">;
+using SHDCSpec = MultiSpec<"vertex", float, "f_dc_0", "f_dc_1", "f_dc_2">;
+using SHRestSpec = MultiSpec<"vertex", float,
+    "f_rest_0", "f_rest_1", "f_rest_2", "f_rest_3", "f_rest_4",
+    "f_rest_5", "f_rest_6", "f_rest_7", "f_rest_8", "f_rest_9",
+    "f_rest_10", "f_rest_11", "f_rest_12", "f_rest_13", "f_rest_14",
+    "f_rest_15", "f_rest_16", "f_rest_17", "f_rest_18", "f_rest_19",
+    "f_rest_20", "f_rest_21", "f_rest_22", "f_rest_23", "f_rest_24",
+    "f_rest_25", "f_rest_26", "f_rest_27", "f_rest_28", "f_rest_29",
+    "f_rest_30", "f_rest_31", "f_rest_32", "f_rest_33", "f_rest_34",
+    "f_rest_35", "f_rest_36", "f_rest_37", "f_rest_38", "f_rest_39",
+    "f_rest_40", "f_rest_41", "f_rest_42", "f_rest_43", "f_rest_44"
 >;
 
 void load_gaussian_splat_ply(
@@ -257,29 +257,59 @@ void save_gaussian_splat_ply(
 
 ```cpp
 
-struct Point {
-    float x, y, z;
+using namespace turboply;
+
+struct MyVertex {
+    float a;
+    double b;
+    char c; 
+    std::vector<int> d{};
 };
 
-PlyFileReader reader("SampleData\\ascii.ply", true);
-reader.parseHeader();
+using MyStruct = turboply::detail::RecordStruct<float, double, char, std::vector<int>>;
+using MySpec = detail::PropertySpec<"vertex", MyStruct, "a", "b", "c", "d">;
 
-auto elem = reader.getElements()[0];
-assert(elem.name == "vertex");
+{
+    PlyFileWriter writer("test.ply", PlyFormat::ASCII);
 
-auto pts = new Point[elem.count];
+    std::vector<MyVertex> data(100);
+    std::vector<float> other(100);
 
-std::vector<Point> normals;
-normals.resize(elem.count);
+    for (size_t i = 0; i < data.size(); i++)
+    {
+        data[i].a = float(i) * 1.5f;
+        data[i].b = double(i) * 2.5;
+        data[i].c = static_cast<char>(i);
+        data[i].d.assign(10, 333);
+        other[i] = float(i) * 100;
+    }
 
-std::vector<float> weight;
-using WeightSpec = ScalarSpec<"vertex", float, "weight">;
+    MySpec my_spec{ data };
+    ScalarSpec<"vertex", float, "e"> o_spec{other};
 
-VertexSpec v_spec{ std::span<Point>(pts, elem.count) }; // 预分配
-NormalSpec n_spec{ std::span(normals) }; // 预分配
-WeightSpec w_spec{ weight }; // 绑定后分配
+    bind_writer(writer, my_spec, o_spec);
 
-bind_reader(reader, n_spec, v_spec, w_spec);
+    writer.close();
+}
+
+{
+    PlyFileReader reader("test.ply"); 
+
+
+    std::vector<MyVertex> out;
+
+    MySpec my_spec2{ out };
+
+    bind_reader(reader, my_spec2);
+
+    printf("Read %zu vertices:\n", out.size());
+    for (size_t i = 0; i < out.size(); i++)
+    {
+        printf("[%zu] a=%.2f, b=%.2lf, c=%d d[%d]", i, out[i].a, out[i].b, (int)out[i].c, (int)out[i].d.size());
+        for (auto& v : out[i].d) printf(" %d", v);
+        printf("\n");
+    }
+}
 
 ```
 

